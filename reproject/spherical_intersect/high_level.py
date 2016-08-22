@@ -1,14 +1,15 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-
+import numpy as np
 from ..utils import parse_input_data, parse_output_projection
 from .core import _reproject_celestial
 
 __all__ = ['reproject_exact']
 
 
-def reproject_exact(input_data, output_projection, shape_out=None, hdu_in=None, parallel=True):
+def reproject_exact(input_data, output_projection, shape_out=None, hdu_in=None,
+                    parallel=True):
     """
     Reproject data to a new projection using flux-conserving spherical
     polygon intersection (this is the slowest algorithm).
@@ -54,9 +55,15 @@ def reproject_exact(input_data, output_projection, shape_out=None, hdu_in=None, 
     """
 
     array_in, wcs_in = parse_input_data(input_data, hdu_in=hdu_in)
-    wcs_out, shape_out = parse_output_projection(output_projection, shape_out=shape_out)
+    wcs_out, shape_out = parse_output_projection(output_projection,
+                                                 shape_out=shape_out)
+    shape_in = array_in.shape
+    orient = 0 if np.linalg.det(wcs_in.pixel_scale_matrix) < 0 else 1
+    orient |= 0 if np.linalg.det(wcs_out.pixel_scale_matrix) < 0 else 2
 
     if wcs_in.has_celestial and wcs_in.naxis == 2:
-        return _reproject_celestial(array_in, wcs_in, wcs_out, shape_out=shape_out, parallel=parallel)
+        return _reproject_celestial(array_in, wcs_in, wcs_out,
+                                    shape_out=shape_out,
+                                    parallel=parallel, orient=orient)
     else:
         raise NotImplementedError("Currently only data with a 2-d celestial WCS can be reprojected using flux-conserving algorithm")

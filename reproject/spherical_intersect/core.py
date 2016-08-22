@@ -23,7 +23,7 @@ def _reproject_slice(args):
     return _reproject_slice_cython(*args)
 
 
-def _reproject_celestial(array, wcs_in, wcs_out, shape_out, parallel=True, _legacy=False):
+def _reproject_celestial(array, wcs_in, wcs_out, shape_out, parallel=True, orient=1, _legacy=False):
 
     # Check the parallel flag.
     if type(parallel) != bool and type(parallel) != int:
@@ -138,7 +138,7 @@ def _reproject_celestial(array, wcs_in, wcs_out, shape_out, parallel=True, _lega
     aca = np.ascontiguousarray
     common_func_par = [0, ny_in, nx_out, ny_out, aca(xp_inout), aca(yp_inout),
                        aca(xw_in), aca(yw_in), aca(xw_out), aca(yw_out), aca(array),
-                       shape_out]
+                       shape_out, orient]
 
     if nproc == 1:
 
@@ -146,6 +146,7 @@ def _reproject_celestial(array, wcs_in, wcs_out, shape_out, parallel=True, _lega
 
         with np.errstate(invalid='ignore'):
             array_new /= weights
+        weights[weights > 1] = 1
 
         return array_new, weights
 
@@ -178,5 +179,6 @@ def _reproject_celestial(array, wcs_in, wcs_out, shape_out, parallel=True, _lega
 
         with np.errstate(invalid='ignore'):
             array_new /= weights
+        weights[weights > 1] = 1
 
         return array_new, weights
